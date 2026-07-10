@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="NovaSpark — A modern, premium dashboard UI demo built with HTML, CSS and JavaScript." />
+  <title>NovaSpark — Premium Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">⚡</div>
+      <span class="logo-text">NovaSpark</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard', this)">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-analytics" onclick="navigate('analytics', this)">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Analytics</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-projects" onclick="navigate('projects', this)">
+        <span class="nav-icon">🗂</span>
+        <span class="nav-label">Projects</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-team" onclick="navigate('team', this)">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Team</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-settings" onclick="navigate('settings', this)">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-avatar">KW</div>
+      <div class="user-info">
+        <div class="user-name">Krithika W.</div>
+        <div class="user-role">Admin</div>
+      </div>
+      <div class="user-status"></div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main-content" id="main-content">
+
+    <!-- Header -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <button class="menu-toggle" id="menu-toggle" onclick="toggleSidebar()">☰</button>
+        <div class="page-title" id="page-title">Dashboard</div>
+      </div>
+      <div class="top-bar-right">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search anything…" id="search-input" />
+        </div>
+        <button class="notif-btn" id="notif-btn" onclick="toggleNotifications()">
+          🔔
+          <span class="notif-badge">3</span>
+        </button>
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-header">Notifications</div>
+          <div class="notif-item unread">
+            <div class="notif-dot"></div>
+            <div>
+              <div class="notif-title">New comment on Sprint 14</div>
+              <div class="notif-time">2 mins ago</div>
+            </div>
+          </div>
+          <div class="notif-item unread">
+            <div class="notif-dot"></div>
+            <div>
+              <div class="notif-title">Deployment succeeded ✅</div>
+              <div class="notif-time">15 mins ago</div>
+            </div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-dot inactive"></div>
+            <div>
+              <div class="notif-title">Team standup at 10am</div>
+              <div class="notif-time">1 hour ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard Page -->
+    <section class="page active" id="page-dashboard">
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card" style="--accent:#a78bfa">
+          <div class="stat-icon">💰</div>
+          <div class="stat-body">
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value" data-target="128400">$0</div>
+            <div class="stat-change positive">↑ 12.4% this month</div>
+          </div>
+          <div class="stat-sparkline">
+            <svg viewBox="0 0 80 30" preserveAspectRatio="none">
+              <polyline points="0,25 15,18 30,22 45,10 60,14 80,4" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stat-card" style="--accent:#34d399">
+          <div class="stat-icon">👤</div>
+          <div class="stat-body">
+            <div class="stat-label">Active Users</div>
+            <div class="stat-value" data-target="8320">0</div>
+            <div class="stat-change positive">↑ 5.7% this month</div>
+          </div>
+          <div class="stat-sparkline">
+            <svg viewBox="0 0 80 30" preserveAspectRatio="none">
+              <polyline points="0,28 15,22 30,25 45,15 60,18 80,10" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stat-card" style="--accent:#f472b6">
+          <div class="stat-icon">📦</div>
+          <div class="stat-body">
+            <div class="stat-label">New Orders</div>
+            <div class="stat-value" data-target="3241">0</div>
+            <div class="stat-change negative">↓ 2.1% this month</div>
+          </div>
+          <div class="stat-sparkline">
+            <svg viewBox="0 0 80 30" preserveAspectRatio="none">
+              <polyline points="0,10 15,12 30,8 45,14 60,20 80,16" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stat-card" style="--accent:#38bdf8">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-body">
+            <div class="stat-label">Satisfaction</div>
+            <div class="stat-value" data-target="97">0%</div>
+            <div class="stat-change positive">↑ 1.3% this month</div>
+          </div>
+          <div class="stat-sparkline">
+            <svg viewBox="0 0 80 30" preserveAspectRatio="none">
+              <polyline points="0,20 15,15 30,18 45,10 60,8 80,5" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle row -->
+      <div class="mid-grid">
+        <!-- Bar Chart -->
+        <div class="glass-card chart-card">
+          <div class="card-header">
+            <div class="card-title">Weekly Revenue</div>
+            <div class="card-subtitle">Jul 2026</div>
+          </div>
+          <div class="bar-chart" id="bar-chart">
+            <!-- bars injected by JS -->
+          </div>
+          <div class="bar-labels" id="bar-labels"></div>
+        </div>
+
+        <!-- Donut chart -->
+        <div class="glass-card donut-card">
+          <div class="card-header">
+            <div class="card-title">Traffic Sources</div>
+          </div>
+          <div class="donut-wrapper">
+            <svg class="donut-svg" viewBox="0 0 120 120">
+              <circle class="donut-bg" cx="60" cy="60" r="48" />
+              <circle class="donut-seg seg-1" cx="60" cy="60" r="48" stroke-dasharray="90 212" stroke-dashoffset="-53" />
+              <circle class="donut-seg seg-2" cx="60" cy="60" r="48" stroke-dasharray="60 212" stroke-dashoffset="-143" />
+              <circle class="donut-seg seg-3" cx="60" cy="60" r="48" stroke-dasharray="42 212" stroke-dashoffset="-203" />
+              <circle class="donut-seg seg-4" cx="60" cy="60" r="48" stroke-dasharray="20 212" stroke-dashoffset="-245" />
+              <text x="60" y="55" text-anchor="middle" class="donut-center-label">Sources</text>
+              <text x="60" y="70" text-anchor="middle" class="donut-center-value">100%</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#a78bfa"></span> Organic <strong>42%</strong></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#34d399"></span> Social <strong>28%</strong></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#f472b6"></span> Referral <strong>20%</strong></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#38bdf8"></span> Direct <strong>10%</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom row -->
+      <div class="bottom-grid">
+        <!-- Recent activity -->
+        <div class="glass-card activity-card">
+          <div class="card-header">
+            <div class="card-title">Recent Activity</div>
+            <button class="view-all-btn">View All</button>
+          </div>
+          <ul class="activity-list">
+            <li class="activity-item">
+              <div class="activity-avatar" style="background:linear-gradient(135deg,#a78bfa,#7c3aed)">AR</div>
+              <div class="activity-body">
+                <span class="activity-name">Arun R.</span> pushed to <span class="activity-tag">main</span>
+                <div class="activity-time">3 minutes ago</div>
+              </div>
+              <span class="activity-badge badge-green">Merged</span>
+            </li>
+            <li class="activity-item">
+              <div class="activity-avatar" style="background:linear-gradient(135deg,#34d399,#059669)">PM</div>
+              <div class="activity-body">
+                <span class="activity-name">Priya M.</span> opened issue <span class="activity-tag">#412</span>
+                <div class="activity-time">27 minutes ago</div>
+              </div>
+              <span class="activity-badge badge-yellow">Open</span>
+            </li>
+            <li class="activity-item">
+              <div class="activity-avatar" style="background:linear-gradient(135deg,#38bdf8,#0284c7)">SK</div>
+              <div class="activity-body">
+                <span class="activity-name">Sam K.</span> deployed <span class="activity-tag">v2.4.1</span>
+                <div class="activity-time">1 hour ago</div>
+              </div>
+              <span class="activity-badge badge-blue">Done</span>
+            </li>
+            <li class="activity-item">
+              <div class="activity-avatar" style="background:linear-gradient(135deg,#f472b6,#db2777)">LN</div>
+              <div class="activity-body">
+                <span class="activity-name">Lena N.</span> updated <span class="activity-tag">design system</span>
+                <div class="activity-time">2 hours ago</div>
+              </div>
+              <span class="activity-badge badge-purple">Updated</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Progress tasks -->
+        <div class="glass-card tasks-card">
+          <div class="card-header">
+            <div class="card-title">Sprint Progress</div>
+            <button class="view-all-btn">Sprint 15</button>
+          </div>
+          <div class="task-list">
+            <div class="task-item">
+              <div class="task-check done" onclick="toggleTask(this)">✓</div>
+              <div class="task-body">
+                <div class="task-name">Design system update</div>
+                <div class="task-progress-bar"><div class="task-fill" style="width:100%;background:var(--purple)"></div></div>
+              </div>
+              <div class="task-pct">100%</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check done" onclick="toggleTask(this)">✓</div>
+              <div class="task-body">
+                <div class="task-name">Auth module refactor</div>
+                <div class="task-progress-bar"><div class="task-fill" style="width:80%;background:var(--teal)"></div></div>
+              </div>
+              <div class="task-pct">80%</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleTask(this)"></div>
+              <div class="task-body">
+                <div class="task-name">Analytics dashboard</div>
+                <div class="task-progress-bar"><div class="task-fill" style="width:55%;background:var(--pink)"></div></div>
+              </div>
+              <div class="task-pct">55%</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleTask(this)"></div>
+              <div class="task-body">
+                <div class="task-name">Mobile responsiveness</div>
+                <div class="task-progress-bar"><div class="task-fill" style="width:30%;background:var(--sky)"></div></div>
+              </div>
+              <div class="task-pct">30%</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check" onclick="toggleTask(this)"></div>
+              <div class="task-body">
+                <div class="task-name">Unit test coverage</div>
+                <div class="task-progress-bar"><div class="task-fill" style="width:10%;background:#f97316"></div></div>
+              </div>
+              <div class="task-pct">10%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Analytics Page -->
+    <section class="page" id="page-analytics">
+      <div class="placeholder-page">
+        <div class="ph-icon">📊</div>
+        <h2>Analytics</h2>
+        <p>Detailed analytics & reporting coming soon.</p>
+      </div>
+    </section>
+
+    <!-- Projects Page -->
+    <section class="page" id="page-projects">
+      <div class="placeholder-page">
+        <div class="ph-icon">🗂</div>
+        <h2>Projects</h2>
+        <p>Project management view coming soon.</p>
+      </div>
+    </section>
+
+    <!-- Team Page -->
+    <section class="page" id="page-team">
+      <div class="placeholder-page">
+        <div class="ph-icon">👥</div>
+        <h2>Team</h2>
+        <p>Team collaboration hub coming soon.</p>
+      </div>
+    </section>
+
+    <!-- Settings Page -->
+    <section class="page" id="page-settings">
+      <div class="placeholder-page">
+        <div class="ph-icon">⚙️</div>
+        <h2>Settings</h2>
+        <p>Preferences & configuration coming soon.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
