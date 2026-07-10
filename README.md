@@ -1,44 +1,62 @@
-# NovaSpark — Premium Dashboard UI
+# NovaSpark — Premium Dashboard UI (React + Vite)
 
-A stunning, fully-responsive dark dashboard UI demo built with **HTML**, **Vanilla CSS**, and **JavaScript** — zero dependencies.
+A stunning, fully-responsive dark dashboard built with **React 19** and **Vite** — no CSS framework, just beautiful Vanilla CSS.
 
 ## ✨ Features
 
+- ⚡ React 19 + Vite (lightning fast HMR)
 - 🎨 Glassmorphism dark theme with animated gradient orbs
-- 📊 Animated bar chart & donut chart (pure CSS + JS)
+- 📊 Animated bar chart & SVG donut chart (pure CSS + JS)
 - 🔢 Number counter animations on page load
-- 🔔 Notification panel with badge
-- ✅ Interactive sprint task checklist
-- 📱 Fully responsive (mobile sidebar drawer)
-- 🌊 Scroll-reveal card animations
+- 🔔 Notification panel with click-outside dismiss
+- ✅ Interactive sprint task checklist (React state)
+- 📱 Fully responsive — mobile sidebar drawer
+- 🌊 Scroll-reveal card entrance animations
 - 🗂 Multi-page navigation (Dashboard, Analytics, Projects, Team, Settings)
+
+## 📁 Project Structure
+
+```
+src/
+├── App.jsx                    # Root — routing & layout shell
+├── index.css                  # All global styles
+├── main.jsx                   # React entry point
+├── components/
+│   ├── Sidebar.jsx            # Navigation sidebar
+│   ├── Topbar.jsx             # Header + notifications
+│   ├── StatCard.jsx           # Animated KPI card
+│   ├── BarChart.jsx           # Weekly revenue bar chart
+│   ├── DonutChart.jsx         # Traffic sources donut chart
+│   ├── ActivityFeed.jsx       # Recent activity list
+│   └── SprintTasks.jsx        # Interactive sprint checklist
+└── pages/
+    ├── DashboardPage.jsx      # Main dashboard view
+    └── PlaceholderPage.jsx    # Placeholder for other pages
+```
 
 ## 🚀 Getting Started
 
-Just open `index.html` in any modern browser — no build step required!
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## 🏗 Build for Production
 
 ```bash
-# Or serve locally with any static server, e.g.:
-npx serve .
-```
-
-## 📁 Structure
-
-```
-demo-ui/
-├── index.html   # Main markup
-├── style.css    # All styles (glassmorphism, animations, responsive)
-├── app.js       # Interactivity (charts, counters, navigation)
-└── README.md
+npm run build
+npm run preview
 ```
 
 ## 🛠 Tech Stack
 
 | Technology | Purpose |
 |------------|---------|
-| HTML5 | Semantic markup |
-| CSS3 | Glassmorphism, animations, responsive layout |
-| JavaScript (ES6+) | Charts, counters, interactions |
+| React 19 | UI components & state |
+| Vite | Build tool & dev server |
+| Vanilla CSS | Glassmorphism, animations, responsive |
 | Google Fonts (Outfit) | Typography |
 
 ---
