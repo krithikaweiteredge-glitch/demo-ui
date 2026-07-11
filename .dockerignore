@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+.github
+.aws
+*.md
+*.log
+.env*
+.DS_Store

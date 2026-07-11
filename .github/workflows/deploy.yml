@@ -1,0 +1,128 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# NovaSpark Demo UI — CI/CD Pipeline
+# Deploys to Amazon ECS (Fargate) via ECR on every push to "main"
+#
+# ── Pre-requisites ─────────────────────────────────────────────────────────────
+# 1. AWS ECR repository created:
+#      aws ecr create-repository --repository-name novaspark-demo-ui --region us-east-1
+#
+# 2. ECS Cluster + Service + Task Definition set up (Fargate):
+#      Follow: https://console.aws.amazon.com/ecs/home#/firstRun
+#
+# 3. GitHub Secrets configured (Settings → Secrets → Actions):
+#      AWS_ACCESS_KEY_ID      — IAM user access key
+#      AWS_SECRET_ACCESS_KEY  — IAM user secret key
+#
+# 4. Update the env vars below to match your AWS resources.
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: Deploy to Amazon ECS
+
+on:
+  push:
+    branches: ["main"]
+
+env:
+  AWS_REGION: us-east-1                          # ← your AWS region
+  ECR_REPOSITORY: novaspark-demo-ui              # ← your ECR repository name
+  ECS_SERVICE: novaspark-demo-ui-service         # ← your ECS service name
+  ECS_CLUSTER: novaspark-cluster                 # ← your ECS cluster name
+  ECS_TASK_DEFINITION: .aws/task-definition.json # ← path to task definition JSON
+  CONTAINER_NAME: novaspark-demo-ui              # ← container name in task definition
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Job 1: Lint & Build (CI gate) ──────────────────────────────────────────
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build Vite app
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  # ── Job 2: Build Docker image & Deploy to ECS ───────────────────────────────
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: build                   # only runs if build job passes
+    environment: production
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker build \
+            --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Render ECS task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy updated task definition to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Deployment summary
+        run: |
+          echo "### ✅ Deployed to ECS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** \`${{ steps.build-image.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cluster:** \`${{ env.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service:** \`${{ env.ECS_SERVICE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
