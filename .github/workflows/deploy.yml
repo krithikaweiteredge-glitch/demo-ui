@@ -1,128 +1,159 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # NovaSpark Demo UI — CI/CD Pipeline
-# Deploys to Amazon ECS (Fargate) via ECR on every push to "main"
+# Deploys to AWS EC2 via SSH on every push to "main"
 #
-# ── Pre-requisites ─────────────────────────────────────────────────────────────
-# 1. AWS ECR repository created:
-#      aws ecr create-repository --repository-name novaspark-demo-ui --region us-east-1
+# NO ECS / ECR / CodeDeploy / AWS credentials used.
+# Only SSH-based deployment.
 #
-# 2. ECS Cluster + Service + Task Definition set up (Fargate):
-#      Follow: https://console.aws.amazon.com/ecs/home#/firstRun
+# ── GitHub Secrets required (Settings → Secrets → Actions) ────────────────────
 #
-# 3. GitHub Secrets configured (Settings → Secrets → Actions):
-#      AWS_ACCESS_KEY_ID      — IAM user access key
-#      AWS_SECRET_ACCESS_KEY  — IAM user secret key
+#   EC2_HOST          — Public IP or domain of your EC2 instance
+#                       e.g.  3.108.12.14  or  krithikapawar-react.duckdns.org
 #
-# 4. Update the env vars below to match your AWS resources.
+#   EC2_USER          — SSH login username (almost always: ubuntu)
+#
+#   EC2_SSH_KEY       — Contents of your EC2 private key (.pem file)
+#                       Open your .pem file, copy everything including
+#                       -----BEGIN RSA PRIVATE KEY----- and
+#                       -----END RSA PRIVATE KEY-----
+#                       Paste the full text as the secret value.
+#
 # ──────────────────────────────────────────────────────────────────────────────
 
-name: Deploy to Amazon ECS
+name: Deploy to EC2 via SSH
 
+# ── Trigger ───────────────────────────────────────────────────────────────────
+# This workflow runs automatically whenever code is pushed to the main branch.
 on:
   push:
     branches: ["main"]
 
-env:
-  AWS_REGION: us-east-1                          # ← your AWS region
-  ECR_REPOSITORY: novaspark-demo-ui              # ← your ECR repository name
-  ECS_SERVICE: novaspark-demo-ui-service         # ← your ECS service name
-  ECS_CLUSTER: novaspark-cluster                 # ← your ECS cluster name
-  ECS_TASK_DEFINITION: .aws/task-definition.json # ← path to task definition JSON
-  CONTAINER_NAME: novaspark-demo-ui              # ← container name in task definition
-
+# ── Permissions ───────────────────────────────────────────────────────────────
+# Read-only access to the repository contents is enough.
 permissions:
   contents: read
 
 jobs:
-  # ── Job 1: Lint & Build (CI gate) ──────────────────────────────────────────
+  # ── Job 1: CI — Install, Lint, Build ────────────────────────────────────────
+  # This job runs on a fresh GitHub-hosted Ubuntu machine.
+  # It verifies the code builds correctly before we deploy anything.
   build:
     name: Build & Lint
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      # Step 1: Download the repository code onto the GitHub runner.
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      # Step 2: Install the correct Node.js version and enable npm caching
+      # so dependencies download faster on repeated runs.
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
+      # Step 3: Install all npm packages listed in package-lock.json.
+      # "npm ci" is preferred over "npm install" in CI because it:
+      #   - Uses package-lock.json exactly (no version drift)
+      #   - Fails if lock file is out of sync
+      #   - Cleans node_modules before installing
       - name: Install dependencies
         run: npm ci
 
+      # Step 4: Run the linter if a lint script exists in package.json.
+      # "--if-present" means the step is skipped if there's no lint script.
       - name: Lint
         run: npm run lint --if-present
 
+      # Step 5: Build the production bundle with Vite.
+      # Output goes into the "dist/" folder.
       - name: Build Vite app
         run: npm run build
 
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1
-
-  # ── Job 2: Build Docker image & Deploy to ECS ───────────────────────────────
+  # ── Job 2: Deploy to EC2 via SSH ────────────────────────────────────────────
+  # This job only runs if the build job above passes successfully.
+  # It SSHes into your EC2 server and deploys the latest code.
   deploy:
-    name: Deploy to ECS
+    name: Deploy to EC2
     runs-on: ubuntu-latest
-    needs: build                   # only runs if build job passes
+    needs: build          # ← waits for build job to pass before running
     environment: production
 
     steps:
-      - name: Checkout source
+      # Step 1: Download the repository code again (each job gets a clean runner).
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      # Step 2: SSH into the EC2 instance and run the deployment commands.
+      #
+      # How it works:
+      #   - appleboy/ssh-action connects to your EC2 via SSH
+      #   - It uses the private key you stored in GitHub Secrets
+      #   - It runs the "script" block as a series of shell commands on EC2
+      #
+      # What happens on EC2:
+      #   1. cd into the project directory
+      #   2. git pull to download the latest code from GitHub
+      #   3. npm install to install any new/updated dependencies
+      #   4. npm run build to generate the fresh "dist/" folder
+      #   5. sudo cp to overwrite Nginx's web root with the new build
+      #   6. sudo nginx -t to verify the Nginx config has no syntax errors
+      #   7. sudo systemctl reload nginx to apply without dropping connections
+      - name: SSH into EC2 and deploy
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          # The public IP or domain name of your EC2 instance
+          host: ${{ secrets.EC2_HOST }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+          # The SSH username (ubuntu for Ubuntu-based EC2 instances)
+          username: ${{ secrets.EC2_USER }}
 
-      - name: Build, tag, and push Docker image to ECR
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          echo "Building image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          docker build \
-            --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:latest \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest \
-            .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          # The private key (.pem file contents) stored as a GitHub Secret
+          key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Render ECS task definition with new image
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.build-image.outputs.image }}
+          # Shell commands to run on EC2 after connecting
+          script: |
 
-      - name: Deploy updated task definition to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+            # ── Navigate to the project directory ────────────────────────────
+            # This is where your project was cloned on EC2.
+            # If your path is different, update this line.
+            cd /home/ubuntu/demo-ui
 
+            # ── Pull latest code from GitHub ─────────────────────────────────
+            # Downloads the newest commits from the main branch.
+            git pull origin main
+
+            # ── Install / update Node dependencies ───────────────────────────
+            # Installs any new packages added since the last deployment.
+            npm install
+
+            # ── Build the React/Vite app ──────────────────────────────────────
+            # Compiles the source code into optimised static files in ./dist
+            npm run build
+
+            # ── Copy build output to Nginx web root ──────────────────────────
+            # Overwrites the current files served by Nginx with the new build.
+            # -r  = recursive (copies folders too)
+            # -f  = force overwrite without prompting
+            sudo cp -rf dist/* /var/www/html/
+
+            # ── Validate Nginx configuration ─────────────────────────────────
+            # Tests that nginx.conf has no syntax errors before reloading.
+            # If this fails, Nginx is NOT reloaded (safe deployment).
+            sudo nginx -t
+
+            # ── Reload Nginx gracefully ───────────────────────────────────────
+            # "reload" applies the new config without dropping active connections.
+            # Use "restart" only if you change the main nginx.conf file.
+            sudo systemctl reload nginx
+
+      # Step 3: Print a deployment summary to the GitHub Actions UI.
       - name: Deployment summary
         run: |
-          echo "### ✅ Deployed to ECS" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image:** \`${{ steps.build-image.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Cluster:** \`${{ env.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Service:** \`${{ env.ECS_SERVICE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Deployed to EC2 via SSH" >> $GITHUB_STEP_SUMMARY
+          echo "- **Host:** \`${{ secrets.EC2_HOST }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`main\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** \`${{ github.actor }}\`" >> $GITHUB_STEP_SUMMARY
