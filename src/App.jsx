@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import DashboardPage from './pages/DashboardPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 
 const PAGE_META = {
@@ -23,6 +24,7 @@ function AppContent() {
 
   const renderPage = () => {
     if (activePage === 'dashboard') return <DashboardPage />;
+    if (activePage === 'analytics') return <AnalyticsPage />;
     const meta = PAGE_META[activePage];
     return <PlaceholderPage icon={meta.icon} title={meta.title} description={meta.desc} />;
   };
